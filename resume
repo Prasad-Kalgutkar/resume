@@ -1,0 +1,767 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: const FirebaseOptions(
+      apiKey: 'AIzaSyB84mfG5nY1wNg3YVnUqP-MBLxUzRhNt5c',
+      appId: '1:777411733787:web:e03df5299f6b2ee71ccbbe',
+      messagingSenderId: '777411733787',
+      projectId: 'companies-2024',
+      authDomain: 'companies-2024.firebaseapp.com',
+      storageBucket: 'companies-2024.appspot.com',
+    ),
+  );
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+  );
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flutter Demo',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: SignInScreen(),
+    );
+  }
+}
+
+class SignInScreen extends StatefulWidget {
+  const SignInScreen({Key? key}) : super(key: key);
+
+  @override
+  _SignInScreenState createState() => _SignInScreenState();
+}
+
+class _SignInScreenState extends State<SignInScreen> {
+  TextEditingController _passwordTextController = TextEditingController();
+  TextEditingController _emailTextController = TextEditingController();
+  String _errorMessage = '';
+  bool _isPasswordVisible = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        width: MediaQuery.of(context).size.width,
+        height: MediaQuery.of(context).size.height,
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/logo1.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              20,
+              MediaQuery.of(context).size.height * 0.2,
+              20,
+              0,
+            ),
+            child: Column(
+              children: <Widget>[
+                Text(
+                  'BUILD YOUR RESUME',
+                  style: TextStyle(
+                    fontSize: 35,
+                    fontWeight: FontWeight.bold,
+                    color: Color.fromARGB(255, 223, 182, 231),
+                    shadows: [
+                      Shadow(
+                        blurRadius: 10.0,
+                        color: Colors.black,
+                        offset: Offset(5.0, 5.0),
+                      ),
+                    ],
+                    decorationThickness: 2.0,
+                    decorationColor: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 80),
+                reusableTextField(
+                  "Enter Email ID",
+                  Icons.person_outline,
+                  false,
+                  _emailTextController,
+                ),
+                SizedBox(height: 20),
+                reusableTextField(
+                  "Enter Password",
+                  Icons.lock_outline,
+                  true,
+                  _passwordTextController,
+                ),
+                SizedBox(height: 20),
+                signInSignUpButton(context, true),
+                signUpOption(),
+                SizedBox(height: 20),
+                if (_errorMessage.isNotEmpty)
+                  Text(
+                    _errorMessage,
+                    style: TextStyle(color: Colors.red),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget signInSignUpButton(BuildContext context, bool signIn) {
+    return MaterialButton(
+      minWidth: double.infinity,
+      height: 60,
+      onPressed: () {
+        FirebaseAuth.instance
+            .signInWithEmailAndPassword(
+          email: _emailTextController.text,
+          password: _passwordTextController.text,
+        )
+            .then((value) {
+          setState(() {
+            _errorMessage = '';
+          });
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => CompanySelectionPage()),
+          );
+        }).onError((error, stackTrace) {
+          setState(() {
+            _errorMessage = 'Incorrect email or password';
+          });
+        });
+      },
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
+      color: Colors.white,
+      child: Text(
+        signIn ? "Sign In" : "Sign Up",
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 18,
+        ),
+      ),
+    );
+  }
+
+  Row signUpOption() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Text("Don't have an account?",
+            style: TextStyle(color: Colors.white70)),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => SignUpScreen()),
+            );
+          },
+          child: const Text(
+            " Sign Up",
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget reusableTextField(String hintText, IconData icon, bool isPassword,
+      TextEditingController controller) {
+    return TextField(
+      controller: controller,
+      obscureText: isPassword && !_isPasswordVisible,
+      decoration: InputDecoration(
+        hintText: hintText,
+        prefixIcon: Icon(icon),
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(_isPasswordVisible
+                    ? Icons.visibility
+                    : Icons.visibility_off),
+                onPressed: () {
+                  setState(() {
+                    _isPasswordVisible = !_isPasswordVisible;
+                  });
+                },
+              )
+            : null,
+      ),
+    );
+  }
+}
+
+class SignUpScreen extends StatefulWidget {
+  const SignUpScreen({Key? key}) : super(key: key);
+
+  @override
+  State<SignUpScreen> createState() => _SignUpScreenState();
+}
+
+class _SignUpScreenState extends State<SignUpScreen> {
+  TextEditingController _passwordTextController = TextEditingController();
+  TextEditingController _emailTextController = TextEditingController();
+  TextEditingController _userNameTextController = TextEditingController();
+
+  // Define reusableTextField method here
+  TextField reusableTextField(String hintText, IconData icon,
+      bool isPasswordType, TextEditingController controller) {
+    return TextField(
+      controller: controller,
+      obscureText: isPasswordType,
+      enableSuggestions: isPasswordType,
+      autocorrect: !isPasswordType,
+      cursorColor: Colors.white,
+      style: TextStyle(color: Colors.white.withOpacity(0.9)),
+      decoration: InputDecoration(
+        prefixIcon: Icon(
+          icon,
+          color: Colors.white70,
+        ),
+        labelText: hintText,
+        labelStyle: TextStyle(color: Colors.white.withOpacity(0.9)),
+        filled: true,
+        floatingLabelBehavior: FloatingLabelBehavior.never,
+        fillColor: Colors.white.withOpacity(0.3),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30.0),
+            borderSide: const BorderSide(width: 0, style: BorderStyle.none)),
+      ),
+      keyboardType: isPasswordType
+          ? TextInputType.visiblePassword
+          : TextInputType.emailAddress,
+    );
+  }
+
+  // Define signInSignUpButton method here
+  Container signInSignUpButton(
+      BuildContext context, bool isLogin, Function onTap) {
+    return Container(
+      width: MediaQuery.of(context).size.width,
+      height: 50,
+      margin: const EdgeInsets.fromLTRB(0, 10, 0, 20),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(90)),
+      child: ElevatedButton(
+        onPressed: () {
+          onTap();
+        },
+        child: Text(
+          isLogin ? 'LOG IN' : 'SIGN UP',
+          style: const TextStyle(
+              color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        style: ButtonStyle(
+            backgroundColor: MaterialStateProperty.resolveWith((states) {
+              if (states.contains(MaterialState.pressed)) {
+                return Colors.black26;
+              }
+              return Colors.white;
+            }),
+            shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30)))), //ButtonStyle
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text(
+          "Sign Up",
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: Container(
+        width: MediaQuery.of(context).size.width,
+        height: MediaQuery.of(context).size.height,
+        decoration: BoxDecoration(
+            gradient: LinearGradient(colors: [
+          hexStringToColor("CB2B93"),
+          hexStringToColor("9546C4"),
+          hexStringToColor("5e61F4")
+        ], begin: Alignment.topCenter, end: Alignment.bottomCenter)),
+        child: SingleChildScrollView(
+            child: Padding(
+          padding: EdgeInsets.fromLTRB(20, 120, 20, 0),
+          child: Column(
+            children: <Widget>[
+              SizedBox(
+                height: 20,
+              ),
+              reusableTextField("Enter UserName", Icons.person_outline, false,
+                  _userNameTextController),
+              const SizedBox(
+                height: 20,
+              ),
+              reusableTextField("Enter Email Id", Icons.person_outline, false,
+                  _emailTextController),
+              const SizedBox(
+                height: 20,
+              ),
+              reusableTextField("Enter Password", Icons.lock_outline, true,
+                  _passwordTextController),
+              const SizedBox(
+                height: 20,
+              ),
+              signInSignUpButton(context, false, () {
+                FirebaseAuth.instance
+                    .createUserWithEmailAndPassword(
+                        email: _emailTextController.text,
+                        password: _passwordTextController.text)
+                    .then((value) {
+                  print("Created New Account");
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => CompanySelectionPage()));
+                }).onError((error, stackTrace) {
+                  print("Error ${error.toString()}");
+                });
+              })
+            ],
+          ),
+        )),
+      ),
+    );
+  }
+}
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({Key? key}) : super(key: key);
+
+  @override
+  // ignore: library_private_types_in_public_api
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: ElevatedButton(
+          child: Text("Logout"),
+          onPressed: () {
+            FirebaseAuth.instance.signOut().then((value) {
+              print("Signed Out");
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => SignInScreen()));
+            });
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class CompanySelectionPage extends StatelessWidget {
+  const CompanySelectionPage({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(70), // Adjust the height as needed
+        child: AppBar(
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              color: Colors.blue, // Change the background color here
+              borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(1)), // Add curved corners
+            ),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Text(
+                  'Select Company',
+                  style: TextStyle(
+                    fontSize: 25,
+                    fontWeight: FontWeight.bold,
+                    color: Color.fromARGB(255, 0, 0, 0),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/logo1.png'),
+            fit: BoxFit.fill,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildCompanyButton(
+                context,
+                'Microsoft',
+                'Description: Microsoft is a leading provider of innovative solutions in technology and healthcare sectors.',
+              ),
+              SizedBox(height: 20),
+              _buildCompanyButton(
+                context,
+                'Samsung',
+                'Description: Samsung specializes in logistics and supply chain management, providing top-notch services to clients worldwide.',
+              ),
+              SizedBox(height: 20),
+              _buildCompanyButton(
+                context,
+                'Intel',
+                'Description: Intel is a global leader in finance and banking, offering comprehensive financial solutions to individuals and businesses.',
+              ),
+              SizedBox(height: 20),
+              _buildCompanyButton(
+                context,
+                'Dell',
+                'Description: Dell is a dynamic startup focusing on digital marketing and e-commerce, revolutionizing the online retail industry.',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompanyButton(
+      BuildContext context, String companyName, String description) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ElevatedButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) =>
+                      SkillSelectionPage(companyName: companyName)),
+            );
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Color.fromARGB(
+                255, 108, 222, 224), // Set button background color to blue
+          ),
+          child: Text(
+            companyName,
+            style: TextStyle(
+              fontSize: 20,
+              color: Color.fromARGB(
+                  255, 9, 1, 124), // Set button text color to white
+            ),
+          ),
+        ),
+        SizedBox(height: 10),
+        Text(
+          description,
+          style: TextStyle(
+            color: Colors.black, // Set text color to black
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class SkillSelectionPage extends StatefulWidget {
+  final String companyName;
+
+  const SkillSelectionPage({Key? key, required this.companyName})
+      : super(key: key);
+
+  @override
+  _SkillSelectionPageState createState() => _SkillSelectionPageState();
+}
+
+class _SkillSelectionPageState extends State<SkillSelectionPage> {
+  late List<String> itSkills;
+  late List<String> nonItSkills;
+  List<String> selectedItSkills = [];
+  List<String> selectedNonItSkills = [];
+  String selectedTemplate = '';
+
+  @override
+  void initState() {
+    super.initState();
+    itSkills = _getCompanyItSkills(widget.companyName);
+    nonItSkills = _getCompanyNonItSkills(widget.companyName);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(70), // Adjust the height as needed
+        child: AppBar(
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              color: Colors.blue, // Change the background color here
+              borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(1)), // Add curved corners
+            ),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Text(
+                  'Select Skills for ${widget.companyName}',
+                  style: TextStyle(
+                    fontSize: 25,
+                    fontWeight: FontWeight.bold,
+                    color: Color.fromARGB(255, 0, 0, 0),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/logo1.png'),
+            fit: BoxFit.fill,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Text(
+                  'IT Skills',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize:
+                        20, // Adjust the font size according to your preference
+                  ),
+                ),
+              ),
+              Column(
+                children: itSkills
+                    .map(
+                      (skill) => CheckboxListTile(
+                        title: Text(skill),
+                        value: selectedItSkills.contains(skill),
+                        onChanged: (value) {
+                          setState(() {
+                            if (value!) {
+                              selectedItSkills.add(skill);
+                            } else {
+                              selectedItSkills.remove(skill);
+                            }
+                          });
+                        },
+                      ),
+                    )
+                    .toList(),
+              ),
+              SizedBox(height: 16),
+              Center(
+                child: Text(
+                  'Non-IT Skills',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize:
+                        20, // Adjust the font size according to your preference
+                  ),
+                ),
+              ),
+              Column(
+                children: nonItSkills
+                    .map(
+                      (skill) => CheckboxListTile(
+                        title: Text(skill),
+                        value: selectedNonItSkills.contains(skill),
+                        onChanged: (value) {
+                          setState(() {
+                            if (value!) {
+                              selectedNonItSkills.add(skill);
+                            } else {
+                              selectedNonItSkills.remove(skill);
+                            }
+                          });
+                        },
+                      ),
+                    )
+                    .toList(),
+              ),
+              SizedBox(height: 16),
+              Container(
+                alignment: Alignment.center,
+                child: ElevatedButton(
+                  onPressed: () {
+                    _showTemplateSelectionDialog(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        Colors.green, // Set button background color to green
+                  ),
+                  child: const Text(
+                    'Select Template',
+                    style: TextStyle(
+                      color: Colors.white, // Set button text color to white
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: 16),
+              Container(
+                alignment: Alignment.center,
+                child: ElevatedButton(
+                  onPressed: () {
+                    _saveSkillsAndTemplate();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        Colors.green, // Set button background color to green
+                  ),
+                  child: const Text(
+                    'Save Skills and Template',
+                    style: TextStyle(
+                      color: Colors.white, // Set button text color to white
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<String> _getCompanyItSkills(String companyName) {
+    // Define IT skills for each company
+    Map<String, List<String>> companyItSkillsMap = {
+      'Microsoft': ['Java', 'Python', 'JavaScript'],
+      'Samsung': ['Salesforce', 'Networking', 'Database Management'],
+      'Intel': ['Data Analysis', 'Machine Learning', 'Cloud Computing'],
+      'Dell': ['UI/UX Design', 'Web Development', 'App Development'],
+    };
+
+    return companyItSkillsMap[companyName] ?? [];
+  }
+
+  List<String> _getCompanyNonItSkills(String companyName) {
+    // Define Non-IT skills for each company
+    Map<String, List<String>> companyNonItSkillsMap = {
+      'Microsoft': ['Marketing', 'Finance', 'Human Resources'],
+      'Samsung': ['Logistics', 'Accounting', 'Operations Management'],
+      'Intel': ['Customer Service', 'Sales', 'Project Management'],
+      'Dell': ['Graphic Design', 'Content Writing', 'Public Relations'],
+    };
+
+    return companyNonItSkillsMap[companyName] ?? [];
+  }
+
+  void _showTemplateSelectionDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          child: Container(
+            padding: EdgeInsets.all(16),
+            width: double.maxFinite, // Set width to maximum available space
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text("Select a Template"),
+                SizedBox(height: 20),
+                Expanded(
+                  child: GridView.count(
+                    shrinkWrap: true,
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    children: List.generate(3, (index) {
+                      // Generate 3 templates for example
+                      String templateNumber = "Template ${index + 1}";
+                      String imagePath =
+                          ''; // Initialize imagePath with a default value
+                      if (index == 0) {
+                        imagePath = "assets/images/logo4.jpeg";
+                      } else if (index == 1) {
+                        imagePath = "assets/images/logo3.jpg";
+                      } else if (index == 2) {
+                        imagePath = "assets/images/logo4.jpeg";
+                      }
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedTemplate = templateNumber;
+                          });
+                          Navigator.of(context).pop();
+                        },
+                        child: GridTile(
+                          footer: Container(
+                            padding: EdgeInsets.symmetric(vertical: 3),
+                            color: Colors.black.withOpacity(0.5),
+                            child: Text(
+                              templateNumber,
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 16),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                          child: Image.asset(
+                            imagePath,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _saveSkillsAndTemplate() {
+    // Save selected skills and template to database
+    // Here you would typically save to Firestore or any other database
+    print("Selected IT Skills: $selectedItSkills");
+    print("Selected Non-IT Skills: $selectedNonItSkills");
+    print("Selected Template: $selectedTemplate");
+
+    FirebaseFirestore.instance.collection('user_skills').add({
+      'companyName': widget.companyName,
+      'itSkills': selectedItSkills,
+      'nonItSkills': selectedNonItSkills,
+      'templateName': selectedTemplate,
+      //'timestamp': DateTime.now(),
+    }).then((value) {
+      print("Skills and Template data saved successfully!");
+    }).catchError((error) {
+      print("Failed to save Skills and Template data: $error");
+    });
+  }
+}
+
+Color hexStringToColor(String code) {
+  return Color(int.parse(code.substring(0, 6), radix: 16) + 0xFF000000);
+}
